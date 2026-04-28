@@ -1,8 +1,9 @@
 <script>
   import { onMount, onDestroy, tick } from "svelte";
   import L from "leaflet";
+  import polyline from "@mapbox/polyline";
 
-  let { waypoints = [] } = $props();
+  let { waypoints = [], polyline: encodedPolyline = null } = $props();
 
   let mapContainer;
   let map;
@@ -78,9 +79,13 @@
     markerLayer = [];
 
     // Convert waypoints to leaflet latlngs
-    const latlngs = wps.map(
-      (wp) => [wp.latitude, wp.longitude],
-    );
+    let latlngs;
+    if (encodedPolyline) {
+      const decoded = polyline.decode(encodedPolyline);
+      latlngs = decoded.map(([lat, lng]) => [lat, lng]);
+    } else {
+      latlngs = wps.map((wp) => [wp.latitude, wp.longitude]);
+    }
 
     // Draw the polyline
     polylineLayer = L.polyline(latlngs, {

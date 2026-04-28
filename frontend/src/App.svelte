@@ -65,7 +65,7 @@
   </aside>
 
   <main class="map-area">
-    <MapView {waypoints} />
+    <MapView {waypoints} polyline={routeResult?.polyline ?? null} />
   </main>
 </div>
 

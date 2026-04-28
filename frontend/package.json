@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@mapbox/polyline": "^1.2.1",
     "leaflet": "^1.9.4"
   },
   "devDependencies": {
