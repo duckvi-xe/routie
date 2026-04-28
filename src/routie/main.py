@@ -2,6 +2,9 @@
 
 Usage:
     uvicorn routie.main:app --reload
+
+To use SQL persistence instead of in-memory:
+    USE_DB=true uvicorn routie.main:app --reload
 """
 
 from __future__ import annotations
@@ -10,11 +13,21 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, AsyncSession
 
 from routie.config import Settings
+from routie.infrastructure.database import (
+    create_all_tables,
+    create_engine,
+    session_factory,
+)
 from routie.infrastructure.in_memory_repo import (
     InMemoryRouteRepository,
     InMemoryUserProfileRepository,
+)
+from routie.infrastructure.repository import (
+    SqlRouteRepository,
+    SqlUserProfileRepository,
 )
 from routie.service.providers.mock import MockRouteProvider
 from routie.use_cases.manage_profile import ManageProfileUseCase
@@ -24,12 +37,15 @@ from routie.web.api import create_router
 # Path to the built Svelte frontend (frontend/dist/)
 _STATIC_DIR = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
 
+# Module-level holders for SQL engine + session maker (used by startup)
+_engine: AsyncEngine | None = None
+_session_maker: async_sessionmaker[AsyncSession] | None = None
+
 
 def _ensure_static_dir() -> Path:
     """Ensure static dir exists, falling back to a generated placeholder if not built."""
     if _STATIC_DIR.exists():
         return _STATIC_DIR
-    # Fallback: create a minimal static dir inside the package
     fallback = Path(__file__).parent / "web" / "static"
     fallback.mkdir(parents=True, exist_ok=True)
     _write_placeholder_index(fallback)
@@ -50,9 +66,20 @@ def _write_placeholder_index(static_dir: Path) -> None:
 
 def create_app() -> FastAPI:
     """Build the FastAPI application with dependency injection."""
+    global _engine, _session_maker
+
+    settings = Settings()
+
     # Infrastructure
-    profile_repo = InMemoryUserProfileRepository()
-    route_repo = InMemoryRouteRepository()
+    if settings.use_database:
+        _engine = create_engine(settings.database_url)
+        _session_maker = session_factory(_engine)
+        profile_repo = SqlUserProfileRepository(_session_maker)
+        route_repo = SqlRouteRepository(_session_maker)
+    else:
+        profile_repo = InMemoryUserProfileRepository()
+        route_repo = InMemoryRouteRepository()
+
     route_provider = MockRouteProvider()
 
     # Use cases
@@ -75,6 +102,14 @@ def create_app() -> FastAPI:
         version="0.1.0",
     )
     app.include_router(router, prefix="/api/v1")
+
+    # Startup: create tables if using SQL database
+    if settings.use_database:
+
+        @app.on_event("startup")
+        async def _init_db() -> None:
+            assert _engine is not None
+            await create_all_tables(_engine)
 
     # Mount static frontend files — catches all non-API paths
     static_dir = _ensure_static_dir()

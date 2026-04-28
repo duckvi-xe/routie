@@ -1,4 +1,8 @@
-"""Routie configuration."""
+"""Routie configuration.
+
+Settings are loaded from environment variables with sensible defaults
+for local development.
+"""
 
 from __future__ import annotations
 
@@ -19,4 +23,18 @@ class Settings:
     )
     cors_origins: list[str] = field(
         default_factory=lambda: environ.get("CORS_ORIGINS", "*").split(",")
+    )
+
+    # Database
+    database_url: str = field(
+        default_factory=lambda: environ.get(
+            "DATABASE_URL",
+            "sqlite+aiosqlite:///routie.db",
+        )
+    )
+
+    # If True, create/run the SQL database; if False, use in-memory repos
+    use_database: bool = field(
+        default_factory=lambda: environ.get("USE_DB", "false").lower()
+        in ("1", "true", "yes")
     )

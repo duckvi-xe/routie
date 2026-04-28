@@ -20,6 +20,13 @@ web = [
     "uvicorn>=0.32",
     "pydantic>=2.0",
 ]
+db = [
+    "sqlalchemy[asyncio]>=2.0",
+    "aiosqlite>=0.20",
+]
+all = [
+    "routie[dev,web,db]",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
