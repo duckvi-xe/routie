@@ -168,7 +168,7 @@ class TestMockProviderPolyline:
         route = await provider.plan_route(req, runner_profile)
         decoded = decode_polyline(route.polyline)  # type: ignore[arg-type]
         assert len(decoded) == len(route.waypoints)
-        for orig, dec in zip(route.waypoints, decoded):
+        for orig, dec in zip(route.waypoints, decoded, strict=True):
             assert abs(orig.latitude - dec[0]) < 0.00001
             assert abs(orig.longitude - dec[1]) < 0.00001
 

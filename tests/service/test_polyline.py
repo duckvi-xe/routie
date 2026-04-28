@@ -5,7 +5,7 @@ from __future__ import annotations
 import polyline
 
 from routie.domain.value_objects import Coordinates
-from routie.service.providers.polyline import encode_polyline, decode_polyline
+from routie.service.providers.polyline import decode_polyline, encode_polyline
 
 
 class TestPolylineRoundtrip:
@@ -20,7 +20,7 @@ class TestPolylineRoundtrip:
         decoded = decode_polyline(encoded)
 
         assert len(decoded) == len(coords)
-        for orig, dec in zip(coords, decoded):
+        for orig, dec in zip(coords, decoded, strict=True):
             assert abs(orig.latitude - dec[0]) < 0.00001
             assert abs(orig.longitude - dec[1]) < 0.00001
 
@@ -36,7 +36,7 @@ class TestPolylineRoundtrip:
         decoded = decode_polyline(encoded)
 
         assert len(decoded) == len(coords)
-        for orig, dec in zip(coords, decoded):
+        for orig, dec in zip(coords, decoded, strict=True):
             assert abs(orig.latitude - dec[0]) < 0.00001
             assert abs(orig.longitude - dec[1]) < 0.00001
 
