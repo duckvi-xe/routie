@@ -1,0 +1,40 @@
+# GraphHopper Routing Engine Configuration
+# Docs: https://docs.graphhopper.com/
+
+# ==============================================================================
+#  Data Reader — OSM file to import
+# ==============================================================================
+datareader.file: /data/italy-latest.osm.pbf
+
+# ==============================================================================
+#  Graph Location — where to store the pre-processed routing graph
+# ==============================================================================
+graph.location: /data/graph-cache
+
+# Graph encoding — which vehicles/profiles to support
+graph.flag_encoders: foot,bike
+
+# ==============================================================================
+#  Elevation — fetch SRTM elevation data for altitude information
+# ==============================================================================
+elevation: true
+elevation.cache_dir: /data/elevation-cache
+
+# ==============================================================================
+#  Server Configuration
+# ==============================================================================
+server.applicationConnectors:
+  - type: http
+    port: 8989
+    bindHost: 0.0.0.0
+
+# ==============================================================================
+#  Routing Profiles — custom profiles per activity type
+# ==============================================================================
+profiles:
+  - name: foot
+    vehicle: foot
+    weighting: fastest
+  - name: bike
+    vehicle: bike
+    weighting: fastest

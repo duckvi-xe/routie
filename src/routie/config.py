@@ -38,3 +38,18 @@ class Settings:
         default_factory=lambda: environ.get("USE_DB", "false").lower()
         in ("1", "true", "yes")
     )
+
+    # GraphHopper
+    graphhopper_url: str = field(
+        default_factory=lambda: environ.get(
+            "GRAPHOPPER_URL", "http://graphhopper:8989"
+        )
+    )
+    graphhopper_api_key: str | None = field(
+        default_factory=lambda: environ.get("GRAPHOPPER_API_KEY", None)
+    )
+
+    # Route provider: "mock" (default) or "graphhopper"
+    route_provider: str = field(
+        default_factory=lambda: environ.get("ROUTE_PROVIDER", "mock").lower()
+    )

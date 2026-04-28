@@ -1,7 +1,10 @@
-# Python
+# Byte-compiled / compiled / dynamic
 __pycache__/
 *.py[cod]
-*.egg-info/
+*$py.class
+
+# OSM data (large binary files, downloaded separately)
+data/osm/
 dist/
 build/
 
@@ -32,3 +35,6 @@ file::memory:*
 # Frontend (Svelte + Vite)
 frontend/node_modules/
 frontend/dist/
+
+# Package build
+*.egg-info/

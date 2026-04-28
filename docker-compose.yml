@@ -13,6 +13,8 @@ services:
       - DATABASE_URL=${DATABASE_URL:-sqlite+aiosqlite:///data/routie.db}
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - ROUTE_PROVIDER=${ROUTE_PROVIDER:-mock}
+      - GRAPHOPPER_URL=${GRAPHOPPER_URL:-http://graphhopper:8989}
     volumes:
       - routie-data:/app/data
     restart: unless-stopped
@@ -54,6 +56,22 @@ services:
       - backend
     restart: unless-stopped
 
+  # ==========================================================================
+  #  GraphHopper Routing Engine (optional — activate with --profile graphhopper)
+  # ==========================================================================
+  graphhopper:
+    image: graphhopper/graphhopper:9.0
+    profiles: ["graphhopper"]
+    ports:
+      - "8989:8989"
+    volumes:
+      - osm-data:/data
+      - ./config/graphhopper.yml:/graphhopper/config.yml:ro
+    environment:
+      - JAVA_OPTS=-Xmx2g -Xms512m
+    restart: unless-stopped
+
 volumes:
   routie-data:
   pgdata:
+  osm-data:

@@ -29,6 +29,8 @@ from routie.infrastructure.repository import (
     SqlRouteRepository,
     SqlUserProfileRepository,
 )
+from routie.service.providers.base import RouteProvider as RouteProviderBase
+from routie.service.providers.graphhopper import GraphHopperRouteProvider
 from routie.service.providers.mock import MockRouteProvider
 from routie.use_cases.manage_profile import (
     ManageProfileUseCase,
@@ -83,7 +85,15 @@ def create_app() -> FastAPI:
         profile_repo = InMemoryUserProfileRepository()
         route_repo = InMemoryRouteRepository()
 
-    route_provider = MockRouteProvider()
+    # Route provider: mock (default) or graphhopper
+    route_provider: RouteProviderBase
+    if settings.route_provider == "graphhopper":
+        route_provider = GraphHopperRouteProvider(
+            base_url=settings.graphhopper_url,
+            api_key=settings.graphhopper_api_key,
+        )
+    else:
+        route_provider = MockRouteProvider()
 
     # Use cases
     manage_profile_uc = ManageProfileUseCase(profile_repo=profile_repo)

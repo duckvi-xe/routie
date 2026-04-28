@@ -18,11 +18,15 @@ routie/
 ├── frontend/                # Svelte 5 + Vite
 │   ├── src/                 # Componenti, store, services
 │   └── dist/                # Build output (servito da FastAPI)
-├── tests/                   # pytest (143 test)
+├── tests/                   # pytest (178 test)
 ├── .github/workflows/
 │   └── ci.yml              # Lint + mypy + test (3.12/3.13) + Docker build
 ├── Dockerfile               # Multi-stage (Node → Python 3.13-slim)
-├── docker-compose.yml       # Profili: default, prod, tunnel
+├── docker-compose.yml       # Profili: default, prod, tunnel, graphhopper
+├── config/
+│   └── graphhopper.yml      # Configurazione GraphHopper routing engine
+├── scripts/
+│   └── download-osm.sh      # Download dati OSM per GraphHopper
 └── .hermes/
     └── plans/               # Piani di sviluppo
 ```
@@ -38,7 +42,7 @@ routie/
 - [x] Endpoint REST: `POST /api/v1/routes/plan`, `POST /api/v1/profiles`, `GET /api/v1/profiles/{id}`, `GET /api/v1/routes/{id}`
 - [x] Storage SQLite via SQLAlchemy async
 - [x] Frontend Svelte 5 + Leaflet + OSM (mappa interattiva)
-- [x] 143 test pytest passanti
+- [x] 178 test pytest passanti
 
 ### Fase 1 — CI/CD & Tooling
 - [x] Configurazione ruff (Bugbear, Simplify, Pylint, Async, Pathlib)
@@ -81,14 +85,20 @@ routie/
 - [ ] Query DB per recuperare route salvate per profilo
 - [ ] Paginazione (offset/limit)
 - [ ] Filtri per data, attività, distanza
-- [ ] Test repository e API
 
-#### 5. Integrazione GraphHopper Reale
-- [ ] Servizio GraphHopper provider (sostituisce mock)
-- [ ] API key management in config
-- [ ] Rate limiting e caching
-- [ ] Fallback a mock provider se GraphHopper non raggiungibile
-- [ ] Test con httpx mocking
+#### 5. Integrazione GraphHopper 🚧
+- [x] GraphHopperRouteProvider (TDD: 25 test)
+- [x] Chiamata HTTP a GraphHopper `/route` API
+- [x] Mapping vehicle (foot/bike) da attività
+- [x] Parsing risposta: distanza, tempo, elevazione, waypoint, polyline
+- [x] Config in Settings (URL, API key, provider selector)
+- [x] Wiring in main.py con DI (mock/graphhopper)
+- [x] Docker Compose: servizio graphhopper su porta 8989 (profile: graphhopper)
+- [x] Config GraphHopper (foot + bike profiles, elevation true)
+- [x] Script download OSM (scripts/download-osm.sh)
+- [ ] Download OSM data + primo import GraphHopper (manuale)
+- [ ] Test E2E con GraphHopper reale in Docker
+- [ ] Fallback automatico a mock se GraphHopper non raggiungibile
 
 ### Priorità Bassa
 

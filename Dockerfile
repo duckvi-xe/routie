@@ -31,7 +31,7 @@ COPY pyproject.toml ./
 COPY src/ src/
 
 # Install routie with all extras (web + db)
-RUN pip install --no-cache-dir -e ".[web,db]"
+RUN pip install --no-cache-dir -e ".[web,db,graphhopper]"
 
 # Copy the built frontend assets
 COPY --from=frontend-builder /build/frontend/dist frontend/dist/
