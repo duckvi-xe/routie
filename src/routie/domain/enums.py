@@ -103,7 +103,7 @@ class Direction(Enum):
         return self._angle
 
     @property
-    def value(self) -> str:  # type: ignore[override]
+    def value(self) -> str:
         return self._label
 
     @classmethod
