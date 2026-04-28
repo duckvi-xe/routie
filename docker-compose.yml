@@ -1,0 +1,59 @@
+services:
+  # ==========================================================================
+  #  Routie Backend (FastAPI + Svelte frontend)
+  # ==========================================================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - USE_DB=${USE_DB:-false}
+      - DATABASE_URL=${DATABASE_URL:-sqlite+aiosqlite:///data/routie.db}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+    volumes:
+      - routie-data:/app/data
+    restart: unless-stopped
+
+  # ==========================================================================
+  #  PostgreSQL (optional — activate with --profile prod)
+  # ==========================================================================
+  db:
+    image: postgres:16-alpine
+    profiles: ["prod"]
+    environment:
+      POSTGRES_DB: routie
+      POSTGRES_USER: routie
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-routie}
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U routie"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================================================
+  #  ngrok Tunnel (optional — activate with --profile tunnel)
+  # ==========================================================================
+  ngrok:
+    image: ngrok/ngrok:latest
+    profiles: ["tunnel"]
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
+    command:
+      - "http"
+      - "--domain=${NGROK_DOMAIN:-}"
+      - "backend:8000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  routie-data:
+  pgdata:

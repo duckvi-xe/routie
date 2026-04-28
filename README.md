@@ -51,6 +51,51 @@ Full install (dev tools + web + db):
 pip install -e ".[all]"
 ```
 
+## Docker
+
+### Local (SQLite persistence)
+
+```bash
+# Build and start
+docker compose up --build
+
+# Open http://localhost:8000
+```
+
+### Production-like (PostgreSQL)
+
+```bash
+docker compose --profile prod up --build
+```
+
+### With ngrok tunnel (expose to internet)
+
+```bash
+# 1. Copy and edit env file
+cp .env.example .env
+# Set NGROK_AUTHTOKEN (get one at https://ngrok.com)
+
+# 2. Start with tunnel
+docker compose --profile tunnel up --build
+
+# Combined with PostgreSQL:
+docker compose --profile prod --profile tunnel up --build
+```
+
+The ngrok URL is printed in the ngrok container logs:
+
+```bash
+docker compose logs ngrok
+```
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `Dockerfile` | Multi-stage build — Svelte frontend + FastAPI backend |
+| `docker-compose.yml` | Services: backend, PostgreSQL (opt), ngrok (opt) |
+| `.env.example` | Template for environment variables |
+
 ## API Endpoints
 
 | Method | Path | Description |
