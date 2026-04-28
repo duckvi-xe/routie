@@ -28,6 +28,7 @@ Thumbs.db
 *.db
 *.sqlite3
 file::memory:*
+data/
 
 # Frontend (Svelte + Vite)
 frontend/node_modules/
