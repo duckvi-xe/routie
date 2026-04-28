@@ -70,10 +70,10 @@ routie/
 - [ ] Handler per 500 con logging strutturato
 - [ ] Test coverage per gli handler
 
-#### 3. Polyline Encoding per MockProvider
-- [ ] Integrare polyline encoding per waypoint restituiti
-- [ ] Compatibilità con frontend Leaflet (polyline decode)
-- [ ] Test polyline roundtrip (encode → decode)
+#### 3. Polyline Encoding per MockProvider ✅
+- [x] Integrare polyline encoding per waypoint restituiti
+- [x] Compatibilità con frontend Leaflet (polyline decode)
+- [x] Test polyline roundtrip (encode → decode)
 
 ### Priorità Media
 

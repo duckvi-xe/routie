@@ -9,6 +9,10 @@ description = "Route planning for runners and cyclists"
 requires-python = ">=3.12"
 license = { text = "MIT" }
 
+dependencies = [
+    "polyline>=2",
+]
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8",

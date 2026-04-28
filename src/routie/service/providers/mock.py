@@ -30,6 +30,7 @@ from routie.domain.models import (
 )
 from routie.domain.value_objects import Coordinates
 from routie.service.providers.base import RouteProvider
+from routie.service.providers.polyline import encode_polyline
 
 # Default starting location (Milan city center)
 _DEFAULT_START = Coordinates(latitude=45.4642, longitude=9.1900)
@@ -141,7 +142,7 @@ class MockRouteProvider(RouteProvider):
             estimated_duration_min=estimated_duration_min,
             difficulty=difficulty,
             waypoints=waypoints,
-            polyline=None,
+            polyline=encode_polyline(waypoints),
             created_at=datetime.now(tz=UTC),
         )
 

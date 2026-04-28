@@ -8,6 +8,7 @@ from routie.domain.enums import ActivityType, SkillLevel, TerrainType
 from routie.domain.models import RoutePlanRequest, UserProfile
 from routie.domain.value_objects import Coordinates
 from routie.service.providers.mock import MockRouteProvider
+from routie.service.providers.polyline import decode_polyline
 
 
 @pytest.fixture
@@ -145,3 +146,46 @@ class TestMockRouteProvider:
         expected_min = (route.distance_km / runner_profile.avg_speed_kmh) * 60
         # Allow 20% tolerance for the random factor
         assert abs(route.estimated_duration_min - expected_min) / expected_min < 0.2
+
+
+class TestMockProviderPolyline:
+    """Tests for polyline encoding in MockProvider."""
+
+    async def test_polyline_is_populated(
+        self, provider: MockRouteProvider, runner_profile: UserProfile
+    ):
+        """Route from mock provider should have a non-null polyline."""
+        req = RoutePlanRequest(activity_type=ActivityType.RUNNING, max_distance_km=10.0)
+        route = await provider.plan_route(req, runner_profile)
+        assert route.polyline is not None
+        assert len(route.polyline) > 0
+
+    async def test_polyline_roundtrip_matches_waypoints(
+        self, provider: MockRouteProvider, runner_profile: UserProfile
+    ):
+        """Decoded polyline should approximately match original waypoints."""
+        req = RoutePlanRequest(activity_type=ActivityType.RUNNING, max_distance_km=10.0)
+        route = await provider.plan_route(req, runner_profile)
+        decoded = decode_polyline(route.polyline)  # type: ignore[arg-type]
+        assert len(decoded) == len(route.waypoints)
+        for orig, dec in zip(route.waypoints, decoded, strict=True):
+            assert abs(orig.latitude - dec[0]) < 0.00001
+            assert abs(orig.longitude - dec[1]) < 0.00001
+
+    async def test_polyline_is_deterministic(
+        self, provider: MockRouteProvider, runner_profile: UserProfile
+    ):
+        """Same inputs should produce the same polyline."""
+        req = RoutePlanRequest(activity_type=ActivityType.RUNNING, max_distance_km=10.0)
+        route1 = await provider.plan_route(req, runner_profile)
+        route2 = await provider.plan_route(req, runner_profile)
+        assert route1.polyline == route2.polyline
+
+    async def test_polyline_cycling(
+        self, provider: MockRouteProvider, cyclist_profile: UserProfile
+    ):
+        """Cycling routes should also have polyline populated."""
+        req = RoutePlanRequest(activity_type=ActivityType.CYCLING, max_distance_km=30.0)
+        route = await provider.plan_route(req, cyclist_profile)
+        assert route.polyline is not None
+        assert len(route.polyline) > 0
