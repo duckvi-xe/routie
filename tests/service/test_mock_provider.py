@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from routie.domain.enums import ActivityType, Direction, SkillLevel, TerrainType
+from routie.domain.enums import ActivityType, SkillLevel, TerrainType
 from routie.domain.models import RoutePlanRequest, UserProfile
 from routie.domain.value_objects import Coordinates
 from routie.service.providers.mock import MockRouteProvider

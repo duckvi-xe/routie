@@ -8,7 +8,6 @@ happens in the repositories.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
 from uuid import UUID
 
 from sqlalchemy import DateTime, Float, String, Text

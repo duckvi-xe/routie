@@ -13,7 +13,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from routie.config import Settings
 from routie.infrastructure.database import (
@@ -30,8 +30,11 @@ from routie.infrastructure.repository import (
     SqlUserProfileRepository,
 )
 from routie.service.providers.mock import MockRouteProvider
-from routie.use_cases.manage_profile import ManageProfileUseCase
-from routie.use_cases.plan_route import PlanRouteUseCase
+from routie.use_cases.manage_profile import (
+    ManageProfileUseCase,
+    UserProfileRepository,
+)
+from routie.use_cases.plan_route import PlanRouteUseCase, RouteRepository
 from routie.web.api import create_router
 
 # Path to the built Svelte frontend (frontend/dist/)
@@ -74,8 +77,8 @@ def create_app() -> FastAPI:
     if settings.use_database:
         _engine = create_engine(settings.database_url)
         _session_maker = session_factory(_engine)
-        profile_repo = SqlUserProfileRepository(_session_maker)
-        route_repo = SqlRouteRepository(_session_maker)
+        profile_repo: UserProfileRepository = SqlUserProfileRepository(_session_maker)
+        route_repo: RouteRepository = SqlRouteRepository(_session_maker)
     else:
         profile_repo = InMemoryUserProfileRepository()
         route_repo = InMemoryRouteRepository()

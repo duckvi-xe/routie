@@ -14,6 +14,8 @@ dev = [
     "pytest>=8",
     "pytest-asyncio>=0.24",
     "httpx>=0.27",
+    "ruff>=0.9",
+    "mypy>=1.15",
 ]
 web = [
     "fastapi>=0.115",
@@ -36,6 +38,60 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 asyncio_mode = "auto"
 
+# ── Ruff ──────────────────────────────────────────────────────────────────────
 [tool.ruff]
 line-length = 88
 target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes (unused imports, undefined names)
+    "I",    # import sorting (isort)
+    "N",    # naming conventions
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "PLC",  # pylint conventions
+    "PLE",  # pylint errors
+    "RUF",  # ruff-specific
+    "C4",   # flake8-comprehensions
+    "YTT",  # flake8-2020
+    "ASYNC",# flake8-async
+    "PTH",  # flake8-use-pathlib
+    "G",    # flake8-logging-format
+]
+ignore = [
+    "E501",       # line too long (handled by formatter)
+    "N818",       # exception names must end in 'Error' (we use custom names)
+    "SIM117",     # multiple with statements (sometimes clearer as nested)
+    "PLC1901",    # unnecessary if-s (sometimes clearer)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "N802",  # function names in test methods use snake_case
+    "N803",  # argument names in test methods
+    "N806",  # variable names
+    "S101",  # assert allowed in tests
+    "ANN",   # no annotation requirements in tests
+    "ASYNC", # async patterns relaxed in tests
+]
+
+[tool.ruff.format]
+quote-style = "double"
+
+# ── Mypy ──────────────────────────────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.13"
+strict = false
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+check_untyped_defs = true
+ignore_missing_imports = true
+exclude = [
+    "tests/",
+    "build/",
+    ".venv/",
+]

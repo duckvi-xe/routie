@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from routie.domain.enums import ActivityType, Direction, TerrainType
-from routie.domain.models import Route, RoutePlanRequest
+from routie.domain.models import Route, RoutePlanRequest, UserProfile
 from routie.domain.value_objects import Coordinates
 from routie.use_cases.manage_profile import (
     ProfileNotFoundError,
@@ -30,7 +30,7 @@ class RouteProvider:
     async def plan_route(
         self,
         request: RoutePlanRequest,
-        profile: "UserProfile",  # noqa: F821
+        profile: UserProfile,
     ) -> Route:
         raise NotImplementedError
 

@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import Enum, StrEnum
 
 
-class ActivityType(str, Enum):
+class ActivityType(StrEnum):
     """Type of physical activity."""
 
     RUNNING = "running"
@@ -28,11 +28,11 @@ class SkillLevel(Enum):
         return self._speed_kmh
 
     @property
-    def value(self) -> str:
+    def value(self) -> str:  # type: ignore[override]
         return self._label
 
     @classmethod
-    def from_string(cls, label: str) -> "SkillLevel":
+    def from_string(cls, label: str) -> SkillLevel:
         """Return a SkillLevel from its string label."""
         for level in cls:
             if level.value == label:
@@ -69,7 +69,7 @@ _TERRAIN_FACTORS: dict[str, float] = {
 }
 
 
-class TerrainType(str, Enum):
+class TerrainType(StrEnum):
     """Type of terrain with elevation factor."""
 
     FLAT = "flat"
@@ -103,7 +103,7 @@ class Direction(Enum):
         return self._angle
 
     @property
-    def value(self) -> str:
+    def value(self) -> str:  # type: ignore[override]
         return self._label
 
     @classmethod
@@ -115,14 +115,15 @@ class Direction(Enum):
         for d in cls:
             if d.angle == normalized:
                 return d
+        # The filter above guarantees d.angle is int here
         closest = min(
             (d for d in cls if d.angle is not None),
-            key=lambda d: abs(d.angle - normalized),
+            key=lambda d: abs(d.angle - normalized),  # type: ignore[operator]
         )
         return closest
 
 
-class DifficultyLevel(str, Enum):
+class DifficultyLevel(StrEnum):
     """Route difficulty level."""
 
     EASY = "easy"

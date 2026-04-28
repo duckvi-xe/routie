@@ -8,13 +8,12 @@ import pytest
 
 from routie.domain.enums import (
     ActivityType,
-    DifficultyLevel,
     Direction,
     SkillLevel,
     TerrainType,
 )
 from routie.domain.models import Route, RoutePlanRequest, UserProfile
-from routie.domain.value_objects import Coordinates, Distance, Duration
+from routie.domain.value_objects import Coordinates
 from routie.use_cases.manage_profile import (
     CreateProfileRequest,
     ManageProfileUseCase,
@@ -22,7 +21,6 @@ from routie.use_cases.manage_profile import (
     UpdateProfileRequest,
 )
 from routie.use_cases.plan_route import PlanRouteRequest, PlanRouteUseCase
-
 
 # ---------------------------------------------------------------------------
 #  Fake repositories (in-memory, no I/O, test doubles)
@@ -68,7 +66,7 @@ class FakeRouteProvider:
     def __init__(self) -> None:
         self.last_request: RoutePlanRequest | None = None
 
-    async def plan_route(  # noqa: PLR6301
+    async def plan_route(
         self,
         request: RoutePlanRequest,
         profile: UserProfile,

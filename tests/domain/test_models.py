@@ -12,7 +12,7 @@ from routie.domain.enums import (
     TerrainType,
 )
 from routie.domain.models import Route, RoutePlanRequest, UserProfile
-from routie.domain.value_objects import Coordinates, Distance, Duration
+from routie.domain.value_objects import Coordinates
 
 
 class TestUserProfile:

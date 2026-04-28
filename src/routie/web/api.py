@@ -16,12 +16,18 @@ from routie.domain.enums import (
 from routie.domain.value_objects import Coordinates
 from routie.use_cases.manage_profile import (
     CreateProfileRequest as CreateProfileUCRequest,
+)
+from routie.use_cases.manage_profile import (
     ManageProfileUseCase,
     ProfileNotFoundError,
+)
+from routie.use_cases.manage_profile import (
     UpdateProfileRequest as UpdateProfileUCRequest,
 )
 from routie.use_cases.plan_route import (
     PlanRouteRequest as PlanRouteUCRequest,
+)
+from routie.use_cases.plan_route import (
     PlanRouteUseCase,
     RouteNotFoundError,
 )
@@ -78,7 +84,7 @@ def _parse_activity_type(value: str) -> ActivityType:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=_error("VALIDATION_ERROR", f"Invalid activity_type: {value}"),
-        )
+        ) from None
 
 
 def _parse_skill_level(value: str) -> SkillLevel:
@@ -88,7 +94,7 @@ def _parse_skill_level(value: str) -> SkillLevel:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=_error("VALIDATION_ERROR", f"Invalid skill_level: {value}"),
-        )
+        ) from None
 
 
 def _parse_terrain(value: str | None) -> TerrainType | None:
@@ -100,7 +106,7 @@ def _parse_terrain(value: str | None) -> TerrainType | None:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=_error("VALIDATION_ERROR", f"Invalid terrain_type: {value}"),
-        )
+        ) from None
 
 
 def _parse_direction(value: str | None) -> Direction | None:
@@ -176,7 +182,7 @@ def create_router(
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=_error("VALIDATION_ERROR", f"Invalid UUID: {profile_id}"),
-            )
+            ) from None
         try:
             profile = await manage_profile_uc.get(uid)
         except ProfileNotFoundError:
@@ -185,7 +191,7 @@ def create_router(
                 detail=_error(
                     "PROFILE_NOT_FOUND", f"Profile {profile_id} not found"
                 ),
-            )
+            ) from None
         return _build_profile_response(profile)
 
     @router.patch(
@@ -200,7 +206,7 @@ def create_router(
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=_error("VALIDATION_ERROR", f"Invalid UUID: {profile_id}"),
-            )
+            ) from None
 
         home_coords = None
         if body.home_latitude is not None or body.home_longitude is not None:
@@ -212,7 +218,7 @@ def create_router(
                     detail=_error(
                         "PROFILE_NOT_FOUND", f"Profile {profile_id} not found"
                     ),
-                )
+                ) from None
             lat = body.home_latitude if body.home_latitude is not None else (
                 existing.home_coordinates.latitude
                 if existing.home_coordinates
@@ -245,7 +251,7 @@ def create_router(
                 detail=_error(
                     "PROFILE_NOT_FOUND", f"Profile {profile_id} not found"
                 ),
-            )
+            ) from None
         return _build_profile_response(profile)
 
     @router.delete(
@@ -260,7 +266,7 @@ def create_router(
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=_error("VALIDATION_ERROR", f"Invalid UUID: {profile_id}"),
-            )
+            ) from None
         try:
             await manage_profile_uc.delete(uid)
         except ProfileNotFoundError:
@@ -269,7 +275,7 @@ def create_router(
                 detail=_error(
                     "PROFILE_NOT_FOUND", f"Profile {profile_id} not found"
                 ),
-            )
+            ) from None
 
     # -----------------------------------------------------------------------
     #  Routes
@@ -291,7 +297,7 @@ def create_router(
                     "VALIDATION_ERROR",
                     f"Invalid profile_id UUID: {body.profile_id}",
                 ),
-            )
+            ) from None
 
         start_coords = None
         if body.start_latitude is not None and body.start_longitude is not None:
@@ -317,7 +323,7 @@ def create_router(
                     "PROFILE_NOT_FOUND",
                     f"Profile {body.profile_id} not found",
                 ),
-            )
+            ) from None
         return _build_route_response(route)
 
     @router.get(
@@ -332,7 +338,7 @@ def create_router(
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=_error("VALIDATION_ERROR", f"Invalid UUID: {route_id}"),
-            )
+            ) from None
         try:
             route = await plan_route_uc.get_route(uid)
         except RouteNotFoundError:
@@ -341,7 +347,7 @@ def create_router(
                 detail=_error(
                     "ROUTE_NOT_FOUND", f"Route {route_id} not found"
                 ),
-            )
+            ) from None
         return _build_route_response(route)
 
     return router

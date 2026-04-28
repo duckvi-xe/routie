@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from routie.domain.enums import (
@@ -56,7 +56,7 @@ class UserProfile:
             preferred_terrain=preferred_terrain,
             preferred_direction=preferred_direction,
             home_coordinates=home_coordinates,
-            created_at=datetime.now(tz=timezone.utc),
+            created_at=datetime.now(tz=UTC),
         )
 
     def with_speed(self, speed_kmh: float) -> UserProfile:
@@ -197,5 +197,5 @@ class Route:
             difficulty=difficulty or _compute_difficulty(distance_km, elevation_gain_m, activity_type),
             waypoints=waypoints or [],
             polyline=polyline,
-            created_at=datetime.now(tz=timezone.utc),
+            created_at=datetime.now(tz=UTC),
         )
