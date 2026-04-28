@@ -6,9 +6,8 @@ from uuid import UUID
 
 import pytest
 from fastapi import FastAPI, status
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 
-from routie.domain.enums import ActivityType, Direction, SkillLevel, TerrainType
 from routie.infrastructure.in_memory_repo import (
     InMemoryRouteRepository,
     InMemoryUserProfileRepository,

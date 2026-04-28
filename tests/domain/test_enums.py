@@ -2,12 +2,12 @@
 
 from routie.domain.enums import (
     ActivityType,
-    SkillLevel,
-    TerrainType,
-    Direction,
-    DifficultyLevel,
     ActivityTypeError,
+    DifficultyLevel,
+    Direction,
+    SkillLevel,
     SkillLevelError,
+    TerrainType,
 )
 
 

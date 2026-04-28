@@ -87,7 +87,7 @@ async def drop_all_tables(engine: AsyncEngine) -> None:
 
 async def get_session(
     session_maker: async_sessionmaker[AsyncSession],
-) -> AsyncGenerator[AsyncSession, None]:
+) -> AsyncGenerator[AsyncSession]:
     """Yield a session from *session_maker* for FastAPI dependency injection."""
     async with session_maker() as session:
         yield session

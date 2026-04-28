@@ -6,10 +6,11 @@ for production use. Each method opens and closes its own session.
 
 from __future__ import annotations
 
+from datetime import UTC
 from uuid import UUID
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from routie.domain.enums import (
     ActivityType,
@@ -18,7 +19,7 @@ from routie.domain.enums import (
     SkillLevel,
     TerrainType,
 )
-from routie.domain.models import Route, RoutePlanRequest, UserProfile
+from routie.domain.models import Route, UserProfile
 from routie.domain.value_objects import Coordinates
 from routie.infrastructure.orm import RouteModel, UserProfileModel
 from routie.use_cases.manage_profile import UserProfileRepository
@@ -63,9 +64,8 @@ def _model_to_profile(model: UserProfileModel) -> UserProfile:
     created_at = model.created_at
     # SQLite doesn't store timezone; assume UTC if missing
     if created_at.tzinfo is None:
-        from datetime import timezone as tz
 
-        created_at = created_at.replace(tzinfo=tz.utc)
+        created_at = created_at.replace(tzinfo=UTC)
 
     return UserProfile(
         id=model.id,
@@ -128,9 +128,8 @@ def _model_to_route(model: RouteModel) -> Route:
     created_at = model.created_at
     # SQLite doesn't store timezone; assume UTC if missing
     if created_at.tzinfo is None:
-        from datetime import timezone as tz
 
-        created_at = created_at.replace(tzinfo=tz.utc)
+        created_at = created_at.replace(tzinfo=UTC)
 
     return Route(
         id=model.id,

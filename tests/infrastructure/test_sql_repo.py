@@ -8,7 +8,8 @@ from __future__ import annotations
 from uuid import UUID
 
 import pytest
-from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from routie.domain.enums import (
     ActivityType,
@@ -20,12 +21,12 @@ from routie.domain.enums import (
 from routie.domain.models import Route, UserProfile
 from routie.domain.value_objects import Coordinates
 from routie.infrastructure.database import (
-    Base,
     create_all_tables,
     create_engine,
-    session_factory,
     drop_all_tables,
+    session_factory,
 )
+from routie.infrastructure.orm import RouteModel, UserProfileModel
 from routie.infrastructure.repository import (
     SqlRouteRepository,
     SqlUserProfileRepository,
@@ -58,11 +59,7 @@ async def profile_repo():
     repo = SqlUserProfileRepository(SESSION_MAKER)
     # Clean slate before each test
     async with SESSION_MAKER() as session:
-        from routie.infrastructure.orm import UserProfileModel
-
-        result = await session.execute(
-            __import__("sqlalchemy").select(UserProfileModel)
-        )
+        result = await session.execute(select(UserProfileModel))
         for model in result.scalars().all():
             await session.delete(model)
         await session.commit()
@@ -74,11 +71,7 @@ async def route_repo():
     assert SESSION_MAKER is not None
     repo = SqlRouteRepository(SESSION_MAKER)
     async with SESSION_MAKER() as session:
-        from routie.infrastructure.orm import RouteModel
-
-        result = await session.execute(
-            __import__("sqlalchemy").select(RouteModel)
-        )
+        result = await session.execute(select(RouteModel))
         for model in result.scalars().all():
             await session.delete(model)
         await session.commit()

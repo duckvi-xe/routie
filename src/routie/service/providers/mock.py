@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import hashlib
 import math
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from routie.domain.enums import (
@@ -22,11 +22,14 @@ from routie.domain.enums import (
     Direction,
     TerrainType,
 )
-from routie.domain.models import Route, RoutePlanRequest, UserProfile
-from routie.domain.models import _compute_difficulty
+from routie.domain.models import (
+    Route,
+    RoutePlanRequest,
+    UserProfile,
+    _compute_difficulty,
+)
 from routie.domain.value_objects import Coordinates
 from routie.service.providers.base import RouteProvider
-
 
 # Default starting location (Milan city center)
 _DEFAULT_START = Coordinates(latitude=45.4642, longitude=9.1900)
@@ -139,7 +142,7 @@ class MockRouteProvider(RouteProvider):
             difficulty=difficulty,
             waypoints=waypoints,
             polyline=None,
-            created_at=datetime.now(tz=timezone.utc),
+            created_at=datetime.now(tz=UTC),
         )
 
     def _generate_waypoints(
@@ -179,7 +182,7 @@ class MockRouteProvider(RouteProvider):
 
         # Build waypoints with iterative scaling
         for attempt in range(5):
-            scaled_lengths = [scale * l * 0.98 for l in raw_lengths]
+            scaled_lengths = [scale * seg_len * 0.98 for seg_len in raw_lengths]
 
             points: list[Coordinates] = [start]
             lat, lon = start.latitude, start.longitude
