@@ -1,6 +1,7 @@
 {
   "mjolnir": {
     "tile_dir": "/data/valhalla/tiles",
+    "tile_extract": "/custom_files/valhalla_tiles.tar",
     "admin": "",
     "timezone": "",
     "hierarchy": true,
