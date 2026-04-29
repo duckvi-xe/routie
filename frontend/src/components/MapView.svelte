@@ -3,7 +3,7 @@
   import L from "leaflet";
   import polyline from "@mapbox/polyline";
 
-  let { waypoints = [], polyline: encodedPolyline = null } = $props();
+  let { waypoints = [], polyline: encodedPolyline = null, mapCenter = { lat: 45.4642, lng: 9.19 } } = $props();
 
   let mapContainer;
   let map;
@@ -13,12 +13,12 @@
   let initialized = false;
 
   // Default: Milan city center
-  const DEFAULT_CENTER = [45.4642, 9.19];
+  const DEFAULT_CENTER = { lat: 45.4642, lng: 9.19 };
   const DEFAULT_ZOOM = 13;
 
   onMount(() => {
     map = L.map(mapContainer, {
-      center: DEFAULT_CENTER,
+      center: [DEFAULT_CENTER.lat, DEFAULT_CENTER.lng],
       zoom: DEFAULT_ZOOM,
       zoomControl: true,
       scrollWheelZoom: true,
@@ -35,6 +35,7 @@
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude, longitude } = pos.coords;
+          mapCenter = { lat: latitude, lng: longitude };
           map.setView([latitude, longitude], DEFAULT_ZOOM);
           userMarker = L.circleMarker([latitude, longitude], {
             radius: 8,
@@ -53,6 +54,12 @@
         { enableHighAccuracy: true, timeout: 5000 },
       );
     }
+
+    // Update mapCenter when the user pans the map
+    map.on("moveend", () => {
+      const c = map.getCenter();
+      mapCenter = { lat: c.lat, lng: c.lng };
+    });
 
     initialized = true;
   });

@@ -36,6 +36,10 @@ from routie.service.providers.polyline import encode_polyline
 # km per degree of latitude (approx)
 _KM_PER_DEG = 111.32
 
+# Default starting location (Milan city center) — used when neither the request
+# nor the profile provides start coordinates
+_DEFAULT_START = Coordinates(latitude=45.4642, longitude=9.1900)
+
 # Default Valhalla service URL when running in Docker compose
 _DEFAULT_VALHALLA_URL = "http://valhalla:8002"
 
@@ -250,12 +254,7 @@ class ValhallaRouteProvider(RouteProvider):
             ValhallaError: If Valhalla is unreachable or returns an error.
         """
         # Determine start coordinates
-        start = request.start_coordinates or profile.home_coordinates
-        if start is None:
-            raise ValhallaError(
-                "start coordinates are required — set start_coordinates in the "
-                "request or home_coordinates in the profile"
-            )
+        start = request.start_coordinates or profile.home_coordinates or _DEFAULT_START
 
         # Determine target distance
         target_km = request.max_distance_km

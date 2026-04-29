@@ -9,6 +9,7 @@
   let waypoints = $state([]);
   let loading = $state(false);
   let error = $state("");
+  let mapCenter = $state({ lat: 45.4642, lng: 9.19 });
 
   function handleProfileCreated(ev) {
     profileId = ev.detail.id;
@@ -52,6 +53,7 @@
       <RouteForm
         {profileId}
         {loading}
+        {mapCenter}
         on:profileCreated={handleProfileCreated}
         on:routeGenerated={handleRouteGenerated}
         on:error={handleError}
@@ -65,7 +67,7 @@
   </aside>
 
   <main class="map-area">
-    <MapView {waypoints} polyline={routeResult?.polyline ?? null} />
+    <MapView bind:mapCenter {waypoints} polyline={routeResult?.polyline ?? null} />
   </main>
 </div>
 
