@@ -7,6 +7,36 @@
     "hierarchy": true,
     "shortcuts": true
   },
+  "httpd": {
+    "service": {
+      "listen": "tcp://0.0.0.0:8002"
+    }
+  },
+  "loki": {
+    "service": {
+      "proxy": "ipc:///tmp/loki"
+    }
+  },
+  "thor": {
+    "service": {
+      "proxy": "ipc:///tmp/thor"
+    }
+  },
+  "skadi": {
+    "service": {
+      "proxy": "ipc:///tmp/skadi"
+    }
+  },
+  "meili": {
+    "service": {
+      "proxy": "ipc:///tmp/meili"
+    },
+    "mode": "auto",
+    "grid": {
+      "cache_size": 100240,
+      "size": 500
+    }
+  },
   "service_limits": {
     "max_route_distance": 500000,
     "max_route_time": 86400,
