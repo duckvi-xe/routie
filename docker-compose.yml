@@ -13,6 +13,8 @@ services:
       - DATABASE_URL=${DATABASE_URL:-sqlite+aiosqlite:///data/routie.db}
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - ROUTE_PROVIDER=${ROUTE_PROVIDER:-mock}
+      - VALHALLA_URL=${VALHALLA_URL:-http://valhalla:8002}
     volumes:
       - routie-data:/app/data
     restart: unless-stopped
@@ -54,6 +56,36 @@ services:
       - backend
     restart: unless-stopped
 
+  # ==========================================================================
+  #  Valhalla Routing Engine (optional — activate with --profile valhalla)
+  #  Image: ghcr.io/gis-ops/docker-valhalla/valhalla
+  #  Docs: https://github.com/gis-ops/docker-valhalla
+  # ==========================================================================
+  valhalla:
+    image: ghcr.io/gis-ops/docker-valhalla/valhalla:latest
+    profiles: ["valhalla"]
+    ports:
+      - "8002:8002"
+    volumes:
+      - valhalla-tiles:/data/valhalla
+      - ./data/osm/:/custom_files/
+      - ./config/valhalla.json:/custom_files/valhalla.json:ro
+    environment:
+      - server_threads=${VALHALLA_THREADS:-2}
+      - use_elevation=true
+      - build_elevation=true
+      - force_rebuild=${VALHALLA_REBUILD:-false}
+      - use_tar=true
+      - HOME=/tmp
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8002/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    restart: unless-stopped
+
 volumes:
   routie-data:
   pgdata:
+  valhalla-tiles:

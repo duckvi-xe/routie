@@ -4,6 +4,7 @@
   let {
     profileId = null,
     loading = false,
+    mapCenter = { lat: 45.4642, lng: 9.19 },
   } = $props();
 
   const dispatch = createEventDispatcher();
@@ -74,6 +75,8 @@
       const body = {
         profile_id: pid,
         activity_type: activityType,
+        start_latitude: mapCenter.lat,
+        start_longitude: mapCenter.lng,
       };
       if (maxDistance) body.max_distance_km = parseFloat(maxDistance);
       if (maxDuration) body.max_duration_min = parseInt(maxDuration, 10);

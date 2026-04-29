@@ -10,7 +10,7 @@ routie/
 ├── src/routie/
 │   ├── domain/              # Entità, value objects, enums
 │   ├── use_cases/           # Use cases (plan_route, profiles, routes)
-│   ├── service/             # Provider astratti e concreti (mock, GraphHopper)
+│   ├── service/             # Provider astratti e concreti (mock, Valhalla)
 │   ├── infrastructure/      # ORM (SQLAlchemy), repository, DB config
 │   ├── web/                 # API routes (api.py), schemas (pydantic)
 │   ├── main.py              # FastAPI app factory
@@ -18,11 +18,13 @@ routie/
 ├── frontend/                # Svelte 5 + Vite
 │   ├── src/                 # Componenti, store, services
 │   └── dist/                # Build output (servito da FastAPI)
-├── tests/                   # pytest (143 test)
+├── tests/                   # pytest (200+ test)
 ├── .github/workflows/
 │   └── ci.yml              # Lint + mypy + test (3.12/3.13) + Docker build
 ├── Dockerfile               # Multi-stage (Node → Python 3.13-slim)
-├── docker-compose.yml       # Profili: default, prod, tunnel
+├── docker-compose.yml       # Profili: default, prod, tunnel, valhalla
+├── config/
+│   └── valhalla.json        # Configurazione Valhalla routing engine
 └── .hermes/
     └── plans/               # Piani di sviluppo
 ```
@@ -38,7 +40,7 @@ routie/
 - [x] Endpoint REST: `POST /api/v1/routes/plan`, `POST /api/v1/profiles`, `GET /api/v1/profiles/{id}`, `GET /api/v1/routes/{id}`
 - [x] Storage SQLite via SQLAlchemy async
 - [x] Frontend Svelte 5 + Leaflet + OSM (mappa interattiva)
-- [x] 143 test pytest passanti
+- [x] 200+ test pytest passanti
 
 ### Fase 1 — CI/CD & Tooling
 - [x] Configurazione ruff (Bugbear, Simplify, Pylint, Async, Pathlib)
@@ -50,8 +52,8 @@ routie/
 
 ### Operativo
 - [x] Heartbeat Telegram ogni 6h (stato PR aperte)
-- [x] `.gitignore` aggiornato (include `file::memory:*`)
-- [x] `file::memory:` rimosso dal tracking git
+- [x] `.gitignore` aggiornato
+- [x] Polyline Encoding per MockProvider (encode + decode)
 
 ## 🚧 In Corso / Da Fare
 
@@ -70,10 +72,20 @@ routie/
 - [ ] Handler per 500 con logging strutturato
 - [ ] Test coverage per gli handler
 
-#### 3. Polyline Encoding per MockProvider ✅
-- [x] Integrare polyline encoding per waypoint restituiti
-- [x] Compatibilità con frontend Leaflet (polyline decode)
-- [x] Test polyline roundtrip (encode → decode)
+#### 3. Integrazione Valhalla Routing Engine 🚧
+- [x] ValhallaRouteProvider (TDD: 22 test)
+- [x] Chiamata POST HTTP a Valhalla `/route` API
+- [x] Mapping costing profile (pedestrian/bicycle) da attività
+- [x] Parsing risposta: distanza (km), tempo (s), elevazione, shape waypoint
+- [x] Polyline encoding da shape coordinates
+- [x] Config in Settings (VALHALLA_URL, provider selector)
+- [x] Wiring in main.py con DI (mock/valhalla)
+- [x] Docker Compose: servizio valhalla su porta 8002 (profile: valhalla)
+- [x] Config Valhalla (pedestrian + bicycle profiles, elevation true)
+- [x] Config file config/valhalla.json
+- [ ] Download OSM data + primo import Valhalla (manuale)
+- [ ] Test E2E con Valhalla reale in Docker
+- [ ] Fallback automatico a mock se Valhalla non raggiungibile
 
 ### Priorità Media
 
@@ -83,22 +95,15 @@ routie/
 - [ ] Filtri per data, attività, distanza
 - [ ] Test repository e API
 
-#### 5. Integrazione GraphHopper Reale
-- [ ] Servizio GraphHopper provider (sostituisce mock)
-- [ ] API key management in config
-- [ ] Rate limiting e caching
-- [ ] Fallback a mock provider se GraphHopper non raggiungibile
-- [ ] Test con httpx mocking
-
 ### Priorità Bassa
 
-#### 6. Miglioramenti UX Frontend
+#### 5. Miglioramenti UX Frontend
 - [ ] Stato di caricamento durante generazione route
 - [ ] Messaggi di errore user-friendly
 - [ ] Salvataggio preferenze profilo
 - [ ] PWA (service worker per offline)
 
-#### 7. Documentazione
+#### 6. Documentazione
 - [ ] README aggiornato con setup instructions
 - [ ] API docs via FastAPI `/docs` e `/redoc`
 - [ ] Esempi curl per ogni endpoint

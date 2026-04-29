@@ -29,7 +29,9 @@ from routie.infrastructure.repository import (
     SqlRouteRepository,
     SqlUserProfileRepository,
 )
+from routie.service.providers.base import RouteProvider as RouteProviderBase
 from routie.service.providers.mock import MockRouteProvider
+from routie.service.providers.valhalla import ValhallaRouteProvider
 from routie.use_cases.manage_profile import (
     ManageProfileUseCase,
     UserProfileRepository,
@@ -83,7 +85,13 @@ def create_app() -> FastAPI:
         profile_repo = InMemoryUserProfileRepository()
         route_repo = InMemoryRouteRepository()
 
-    route_provider = MockRouteProvider()
+    # Route provider — select based on config
+    if settings.route_provider == "valhalla":
+        route_provider: RouteProviderBase = ValhallaRouteProvider(
+            base_url=settings.valhalla_url,
+        )
+    else:
+        route_provider = MockRouteProvider()
 
     # Use cases
     manage_profile_uc = ManageProfileUseCase(profile_repo=profile_repo)

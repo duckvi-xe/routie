@@ -1,0 +1,71 @@
+{
+  "mjolnir": {
+    "tile_dir": "/data/valhalla/tiles",
+    "tile_extract": "/custom_files/valhalla_tiles.tar",
+    "admin": "",
+    "timezone": "",
+    "hierarchy": true,
+    "shortcuts": true
+  },
+  "httpd": {
+    "service": {
+      "listen": "tcp://0.0.0.0:8002"
+    }
+  },
+  "loki": {
+    "service": {
+      "proxy": "ipc:///tmp/loki"
+    }
+  },
+  "thor": {
+    "service": {
+      "proxy": "ipc:///tmp/thor"
+    }
+  },
+  "skadi": {
+    "service": {
+      "proxy": "ipc:///tmp/skadi"
+    }
+  },
+  "meili": {
+    "service": {
+      "proxy": "ipc:///tmp/meili"
+    },
+    "mode": "auto",
+    "grid": {
+      "cache_size": 100240,
+      "size": 500
+    }
+  },
+  "service_limits": {
+    "max_route_distance": 500000,
+    "max_route_time": 86400,
+    "max_route_locations": 100,
+    "max_radius": 500,
+    "max_matrix_distance": 400000,
+    "max_matrix_locations": 50
+  },
+  "costing_options": {
+    "pedestrian": {
+      "walking_speed": 5.1,
+      "walkway_factor": 1.0,
+      "alley_factor": 2.0,
+      "driveway_factor": 5.0,
+      "step_penalty": 30.0,
+      "use_ferry": 0.0,
+      "use_hills": 0.5,
+      "max_hiking_difficulty": 1,
+      "elevation_interval": 10.0
+    },
+    "bicycle": {
+      "cycling_speed": 15.0,
+      "use_roads": 0.5,
+      "use_hills": 0.5,
+      "avoid_bad_surfaces": true,
+      "elevation_interval": 10.0
+    }
+  },
+  "additional_data": {
+    "elevation": "/data/valhalla/elevation"
+  }
+}

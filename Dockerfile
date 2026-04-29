@@ -29,6 +29,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy project metadata + source
 COPY pyproject.toml ./
 COPY src/ src/
+COPY scripts/docker-entrypoint.sh /app/docker-entrypoint.sh
 
 # Install routie with all extras (web + db)
 RUN pip install --no-cache-dir -e ".[web,db]"
@@ -42,4 +43,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 
 EXPOSE 8000
 
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["uvicorn", "routie.main:app", "--host", "0.0.0.0", "--port", "8000"]
