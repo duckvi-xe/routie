@@ -68,9 +68,8 @@ services:
       - "8002:8002"
     volumes:
       - valhalla-tiles:/data/valhalla
-      - valhalla-custom:/custom_files
+      - ./data/osm/:/custom_files/
       - ./config/valhalla.json:/custom_files/valhalla.json:ro
-      - ./data/osm:/custom_files/osm:ro
     environment:
       - server_threads=${VALHALLA_THREADS:-2}
       - use_elevation=true
@@ -89,4 +88,3 @@ volumes:
   routie-data:
   pgdata:
   valhalla-tiles:
-  valhalla-custom:

@@ -155,7 +155,9 @@ VALHALLA_REBUILD=true docker compose --profile valhalla up -d
 
 1. **[`download_osm.sh`](scripts/download_osm.sh)** downloads OSM `.osm.pbf` extracts
    from [Geofabrik](https://download.geofabrik.de) into `data/osm/`.
-2. **`data/osm/`** is mounted into the Valhalla container at `/custom_files/osm/`.
+2. **`data/osm/`** is mounted directly to `/custom_files/` in the Valhalla
+   container, so `.pbf` files (and `valhalla.json`) appear at the root where
+   the Valhalla build script expects them.
 3. On first run (or `VALHALLA_REBUILD=true`), the Valhalla container builds the
    routing tile database — this is the slow step (5-30 min depending on region).
 4. Once built, tiles are cached in the `valhalla-tiles` Docker volume.
