@@ -114,13 +114,10 @@ User  →  Routie (FastAPI)  →  Valhalla (Docker)
 ### Quick Start (Andorra — 5 min)
 
 ```bash
-# 1. Download OSM data + start Valhalla
+# Download OSM data, start Valhalla AND Routie on the same Docker network
 ./scripts/setup_valhalla.sh andorra
 
-# 2. Start Routie with Valhalla
-ROUTE_PROVIDER=valhalla docker compose up -d backend
-
-# 3. Plan a route!
+# Plan a route!
 curl -X POST http://localhost:8000/api/v1/routes/plan \
   -H "Content-Type: application/json" \
   -d '{"profile_id":"<UUID>","activity_type":"running","max_distance_km":10.0,"start_location":{"lat":42.50,"lon":1.52}}'
@@ -130,13 +127,11 @@ curl -X POST http://localhost:8000/api/v1/routes/plan \
 
 ```bash
 # Download Italy (~1.5 GB PBF) and start Valhalla (first import: 10-30 min)
+# The script also starts Routie backend on the same Docker network
 ./scripts/setup_valhalla.sh italy
 
 # Monitor the import
 docker compose logs --tail=50 -f valhalla
-
-# Once ready, start Routie
-ROUTE_PROVIDER=valhalla docker compose up -d backend
 ```
 
 ### Multiple Regions
@@ -202,6 +197,24 @@ Valhalla costing profiles are configured in [`config/valhalla.json`](config/valh
 
 If Valhalla is unreachable, Routie falls back to the mock provider
 (algorithmic routing) so the app stays functional during development.
+
+### Networks & DNS
+
+`setup_valhalla.sh` starts both Valhalla and the backend under the same
+Docker Compose project, so they share a network and the hostname `valhalla`
+resolves via Docker DNS.
+
+If you start the backend **outside** Docker (e.g. `uvicorn` directly):
+
+```bash
+# Valhalla is in Docker, backend is on the host
+VALHALLA_URL=http://localhost:8002 ROUTE_PROVIDER=valhalla uvicorn routie.main:app --reload
+```
+
+| Setup | `VALHALLA_URL` |
+|-------|----------------|
+| Backend in Docker Compose (default) | `http://valhalla:8002` (Docker DNS) |
+| Backend on host / outside Docker | `http://localhost:8002` (host port) |
 
 ---
 

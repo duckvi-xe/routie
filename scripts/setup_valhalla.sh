@@ -5,7 +5,7 @@
 #  This script helps you set up Valhalla for the first time. It:
 #    1. Downloads an OSM extract (PBF) for your region of choice
 #    2. Starts the Valhalla Docker container, which builds the routing tiles
-#    3. Restarts Routie with ROUTE_PROVIDER=valhalla
+#    3. Starts Routie backend on the same Docker network
 #
 #  Usage:
 #    ./scripts/setup_valhalla.sh [region]
@@ -37,7 +37,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 info()  { echo -e "${CYAN}[INFO]${NC}  $*"; }
 ok()    { echo -e "${GREEN}[OK]${NC}    $*"; }
@@ -62,7 +62,6 @@ for region in "${REGIONS[@]}"; do
     region_lower="$(echo "$region" | tr '[:upper:]' '[:lower:]')"
 
     # Build download URL (Geofabrik)
-    # Special cases for well-known regions
     case "$region_lower" in
         italy|switzerland|austria|france|germany|spain|uk|great-britain|netherlands|belgium)
             URL="https://download.geofabrik.de/europe/${region_lower}-latest.osm.pbf"
@@ -102,14 +101,10 @@ info "Step 2/3: Starting Valhalla with profile '${VALHALLA_PROFILE}'"
 export VALHALLA_REBUILD=true
 export VALHALLA_THREADS="${VALHALLA_THREADS:-$(nproc)}"
 export ROUTE_PROVIDER="${ROUTE_PROVIDER:-valhalla}"
-
-# Copy the PBF files into the Valhalla custom_files volume
-# We rely on the docker-compose volume mount: valhalla-custom -> /custom_files
-# The gis-ops image detects .pbf files in /custom_files and imports them.
-# We place them where the docker-compose volume binding can pick them up.
-echo "  Placing OSM data for Valhalla import..."
+export VALHALLA_URL="${VALHALLA_URL:-http://valhalla:8002}"
 
 # Create a custom_files directory that gets mounted into the container
+echo "  Placing OSM data for Valhalla import..."
 mkdir -p custom_files
 for pbf in "${PBF_FILES[@]}"; do
     cp "$pbf" custom_files/
@@ -150,24 +145,25 @@ if [ $ATTEMPTS -ge $MAX_ATTEMPTS ]; then
     warn "You can monitor it with: docker compose logs --tail=50 -f valhalla"
 fi
 
+# ── Step 4: Start Routie backend on the same Docker network ────────────
+info "Starting Routie backend with ROUTE_PROVIDER=valhalla (same Docker network)..."
+
+docker compose up -d backend --no-deps
+
 # ── Done ─────────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${GREEN}═══════════════════════════════════════════════════════════${NC}"
-echo -e "${GREEN}  Valhalla setup complete!${NC}"
+echo -e "${GREEN}  Routie + Valhalla setup complete!${NC}"
 echo -e "${GREEN}═══════════════════════════════════════════════════════════${NC}"
 echo ""
-echo "  Valhalla URL:  http://localhost:8002"
-echo "  OSM data:      ${OSM_DIR}/"
+echo "  Routie URL: http://localhost:8000"
+echo "  Valhalla:   http://localhost:8002  (host) / http://valhalla:8002 (compose)"
+echo "  OSM data:   ${OSM_DIR}/"
 echo ""
 echo "  To test routing via Valhalla directly:"
 echo "    curl -X POST http://localhost:8002/route \\"
 echo '      -H "Content-Type: application/json" \'
 echo '      -d '"'"'{"costing":"pedestrian","locations":[{"lat":41.89,"lon":12.49},{"lat":41.90,"lon":12.50}]}'"'"''
-echo ""
-echo "  To start Routie with Valhalla:"
-echo "    ROUTE_PROVIDER=valhalla docker compose up -d backend"
-echo ""
-echo "  Or set ROUTE_PROVIDER=valhalla in your .env file."
 echo ""
 echo "  To check Valhalla logs:"
 echo "    docker compose logs --tail=50 valhalla"
