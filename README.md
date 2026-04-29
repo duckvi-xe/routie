@@ -96,6 +96,115 @@ docker compose logs ngrok
 | `docker-compose.yml` | Services: backend, PostgreSQL (opt), ngrok (opt) |
 | `.env.example` | Template for environment variables |
 
+## Valhalla Routing Engine
+
+Routie uses **Valhalla** as its primary routing engine — a self-hosted, open-source
+routing service from Mapbox. It supports pedestrian (running) and bicycle routing
+with elevation-aware costing.
+
+### Architecture
+
+```
+User  →  Routie (FastAPI)  →  Valhalla (Docker)
+  |                            |
+  | POST /api/v1/routes/plan   | POST /route JSON API
+  | ROUTE_PROVIDER=valhalla    | Port 8002
+```
+
+### Quick Start (Andorra — 5 min)
+
+```bash
+# 1. Download OSM data + start Valhalla
+./scripts/setup_valhalla.sh andorra
+
+# 2. Start Routie with Valhalla
+ROUTE_PROVIDER=valhalla docker compose up -d backend
+
+# 3. Plan a route!
+curl -X POST http://localhost:8000/api/v1/routes/plan \
+  -H "Content-Type: application/json" \
+  -d '{"profile_id":"<UUID>","activity_type":"running","max_distance_km":10.0,"start_location":{"lat":42.50,"lon":1.52}}'
+```
+
+### Production Setup (Italy, larger region)
+
+```bash
+# Download Italy (~1.5 GB PBF) and start Valhalla (first import: 10-30 min)
+./scripts/setup_valhalla.sh italy
+
+# Monitor the import
+docker compose logs --tail=50 -f valhalla
+
+# Once ready, start Routie
+ROUTE_PROVIDER=valhalla docker compose up -d backend
+```
+
+### Multiple Regions
+
+```bash
+./scripts/setup_valhalla.sh "italy,switzerland"
+```
+
+### Manual Control
+
+```bash
+# Start only Valhalla (no build step — uses cached tiles)
+docker compose --profile valhalla up -d
+
+# Force rebuild tiles from scratch (e.g., after updating OSM data)
+VALHALLA_REBUILD=true docker compose --profile valhalla up -d valhalla
+
+# Combined with Routie
+ROUTE_PROVIDER=valhalla VALHALLA_REBUILD=true \
+  docker compose --profile valhalla up -d backend valhalla
+
+# Stop everything
+docker compose --profile valhalla down
+```
+
+### Test Valhalla Directly
+
+```bash
+curl -X POST http://localhost:8002/route \
+  -H "Content-Type: application/json" \
+  -d '{
+    "costing": "pedestrian",
+    "locations": [
+      {"lat": 41.89, "lon": 12.49},
+      {"lat": 41.90, "lon": 12.50}
+    ]
+  }'
+```
+
+### Configuration
+
+| Env Variable | Default | Description |
+|-------------|---------|-------------|
+| `ROUTE_PROVIDER` | `mock` | `"mock"` for dev, `"valhalla"` for real routing |
+| `VALHALLA_URL` | `http://valhalla:8002` | Valhalla endpoint (Docker internal DNS) |
+| `VALHALLA_THREADS` | `2` | CPU threads for Valhalla tile building |
+| `VALHALLA_REBUILD` | `false` | Force rebuild routing tiles on startup |
+
+Valhalla costing profiles are configured in [`config/valhalla.json`](config/valhalla.json).
+
+### How It Works
+
+1. The [`setup_valhalla.sh`](scripts/setup_valhalla.sh) script downloads an OSM
+   `.osm.pbf` extract from [Geofabrik](https://download.geofabrik.de).
+2. Files are placed in `custom_files/`, which is mounted into the Valhalla
+   container at `/custom_files/`.
+3. On first run, `ghcr.io/gis-ops/docker-valhalla` builds the routing tile
+   database — this is the slow step (5-30 min depending on region).
+4. Once built, tiles are cached in the `valhalla-tiles` Docker volume.
+5. Subsequent starts skip the build (unless `VALHALLA_REBUILD=true`).
+
+### Fallback Behaviour
+
+If Valhalla is unreachable, Routie falls back to the mock provider
+(algorithmic routing) so the app stays functional during development.
+
+---
+
 ## API Endpoints
 
 | Method | Path | Description |
