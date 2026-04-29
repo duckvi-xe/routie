@@ -76,6 +76,7 @@ services:
       - build_elevation=true
       - force_rebuild=${VALHALLA_REBUILD:-false}
       - use_tar=true
+      - HOME=/tmp
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8002/status"]
       interval: 30s
