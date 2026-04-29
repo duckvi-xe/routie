@@ -93,7 +93,7 @@ docker compose logs ngrok
 | File | Purpose |
 |------|---------|
 | `Dockerfile` | Multi-stage build — Svelte frontend + FastAPI backend |
-| `docker-compose.yml` | Services: backend, PostgreSQL (opt), ngrok (opt) |
+| `docker-compose.yml` | Services: backend, PostgreSQL (opt), ngrok (opt), Valhalla (opt) |
 | `.env.example` | Template for environment variables |
 
 ## Valhalla Routing Engine
@@ -105,56 +105,82 @@ with elevation-aware costing.
 ### Architecture
 
 ```
-User  →  Routie (FastAPI)  →  Valhalla (Docker)
-  |                            |
-  | POST /api/v1/routes/plan   | POST /route JSON API
-  | ROUTE_PROVIDER=valhalla    | Port 8002
+User  →  Routie (FastAPI)    →  Valhalla (Docker)
+  |     ROUTE_PROVIDER=valhalla   POST /route JSON API
+  |     docker compose --profile valhalla up
 ```
 
 ### Quick Start (Andorra — 5 min)
 
 ```bash
-# Download OSM data, start Valhalla AND Routie on the same Docker network
-./scripts/setup_valhalla.sh andorra
+# 1. Download OSM data for a small test region
+./scripts/download_osm.sh andorra
 
-# Plan a route!
+# 2. Start Valhalla + Routie together (first import: ~2-5 min)
+VALHALLA_REBUILD=true docker compose --profile valhalla up -d
+
+# 3. Check that everything is healthy
+docker compose ps
+
+# 4. Plan a route!
 curl -X POST http://localhost:8000/api/v1/routes/plan \
   -H "Content-Type: application/json" \
-  -d '{"profile_id":"<UUID>","activity_type":"running","max_distance_km":10.0,"start_location":{"lat":42.50,"lon":1.52}}'
+  -d '{"profile_id":"<UUID>","activity_type":"running","max_distance_km":10.0}'
 ```
 
 ### Production Setup (Italy, larger region)
 
 ```bash
-# Download Italy (~1.5 GB PBF) and start Valhalla (first import: 10-30 min)
-# The script also starts Routie backend on the same Docker network
-./scripts/setup_valhalla.sh italy
+# 1. Download Italy OSM (~1.5 GB)
+./scripts/download_osm.sh italy
 
-# Monitor the import
+# 2. Start with rebuild (first import: 10-30 min)
+VALHALLA_REBUILD=true docker compose --profile valhalla up -d
+
+# 3. Monitor the import
 docker compose logs --tail=50 -f valhalla
+
+# 4. Subsequent starts use cached tiles (instant)
+docker compose --profile valhalla up -d
 ```
 
 ### Multiple Regions
 
 ```bash
-./scripts/setup_valhalla.sh "italy,switzerland"
+./scripts/download_osm.sh "italy,switzerland"
+VALHALLA_REBUILD=true docker compose --profile valhalla up -d
 ```
+
+### How It Works
+
+1. **[`download_osm.sh`](scripts/download_osm.sh)** downloads OSM `.osm.pbf` extracts
+   from [Geofabrik](https://download.geofabrik.de) into `data/osm/`.
+2. **`data/osm/`** is mounted into the Valhalla container at `/custom_files/osm/`.
+3. On first run (or `VALHALLA_REBUILD=true`), the Valhalla container builds the
+   routing tile database — this is the slow step (5-30 min depending on region).
+4. Once built, tiles are cached in the `valhalla-tiles` Docker volume.
+5. The backend's **[entrypoint](scripts/docker-entrypoint.sh)** automatically
+   waits for Valhalla's healthcheck before starting, so there's no race condition.
+6. If Valhalla is unreachable after the timeout, the backend falls back to the
+   mock provider so the app stays functional during development.
 
 ### Manual Control
 
 ```bash
-# Start only Valhalla (no build step — uses cached tiles)
+# Start both services
 docker compose --profile valhalla up -d
 
-# Force rebuild tiles from scratch (e.g., after updating OSM data)
-VALHALLA_REBUILD=true docker compose --profile valhalla up -d valhalla
+# Force rebuild tiles (e.g., after updating OSM data)
+VALHALLA_REBUILD=true docker compose --profile valhalla up -d
 
-# Combined with Routie
-ROUTE_PROVIDER=valhalla VALHALLA_REBUILD=true \
-  docker compose --profile valhalla up -d backend valhalla
+# Start without rebuild (uses cached tiles)
+docker compose --profile valhalla up -d
 
 # Stop everything
 docker compose --profile valhalla down
+
+# Stop and delete volumes (remove cached tiles)
+docker compose --profile valhalla down -v
 ```
 
 ### Test Valhalla Directly
@@ -176,45 +202,27 @@ curl -X POST http://localhost:8002/route \
 | Env Variable | Default | Description |
 |-------------|---------|-------------|
 | `ROUTE_PROVIDER` | `mock` | `"mock"` for dev, `"valhalla"` for real routing |
-| `VALHALLA_URL` | `http://valhalla:8002` | Valhalla endpoint (Docker internal DNS) |
+| `VALHALLA_URL` | `http://valhalla:8002` | Valhalla endpoint (Docker compose DNS) |
 | `VALHALLA_THREADS` | `2` | CPU threads for Valhalla tile building |
 | `VALHALLA_REBUILD` | `false` | Force rebuild routing tiles on startup |
 
 Valhalla costing profiles are configured in [`config/valhalla.json`](config/valhalla.json).
 
-### How It Works
-
-1. The [`setup_valhalla.sh`](scripts/setup_valhalla.sh) script downloads an OSM
-   `.osm.pbf` extract from [Geofabrik](https://download.geofabrik.de).
-2. Files are placed in `custom_files/`, which is mounted into the Valhalla
-   container at `/custom_files/`.
-3. On first run, `ghcr.io/gis-ops/docker-valhalla` builds the routing tile
-   database — this is the slow step (5-30 min depending on region).
-4. Once built, tiles are cached in the `valhalla-tiles` Docker volume.
-5. Subsequent starts skip the build (unless `VALHALLA_REBUILD=true`).
-
-### Fallback Behaviour
-
-If Valhalla is unreachable, Routie falls back to the mock provider
-(algorithmic routing) so the app stays functional during development.
-
 ### Networks & DNS
 
-`setup_valhalla.sh` starts both Valhalla and the backend under the same
-Docker Compose project, so they share a network and the hostname `valhalla`
-resolves via Docker DNS.
+When using `docker compose --profile valhalla`, both services share the same
+Docker network and the hostname `valhalla` resolves via Docker DNS.
 
-If you start the backend **outside** Docker (e.g. `uvicorn` directly):
+If running the backend **outside** Docker (e.g. `uvicorn` directly):
 
 ```bash
-# Valhalla is in Docker, backend is on the host
 VALHALLA_URL=http://localhost:8002 ROUTE_PROVIDER=valhalla uvicorn routie.main:app --reload
 ```
 
-| Setup | `VALHALLA_URL` |
-|-------|----------------|
-| Backend in Docker Compose (default) | `http://valhalla:8002` (Docker DNS) |
-| Backend on host / outside Docker | `http://localhost:8002` (host port) |
+| Backend location | `VALHALLA_URL` |
+|-----------------|----------------|
+| In Docker Compose (default) | `http://valhalla:8002` (Docker DNS) |
+| On host / outside Docker | `http://localhost:8002` (host port) |
 
 ---
 

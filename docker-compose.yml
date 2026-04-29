@@ -70,12 +70,19 @@ services:
       - valhalla-tiles:/data/valhalla
       - valhalla-custom:/custom_files
       - ./config/valhalla.json:/custom_files/valhalla.json:ro
+      - ./data/osm:/custom_files/osm:ro
     environment:
       - server_threads=${VALHALLA_THREADS:-2}
       - use_elevation=true
       - build_elevation=true
       - force_rebuild=${VALHALLA_REBUILD:-false}
       - use_tar=true
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8002/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
     restart: unless-stopped
 
 volumes:
