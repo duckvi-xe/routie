@@ -1,4 +1,11 @@
 {
+  "mjolnir": {
+    "tile_dir": "/data/valhalla/tiles",
+    "admin": "",
+    "timezone": "",
+    "hierarchy": true,
+    "shortcuts": true
+  },
   "service_limits": {
     "max_route_distance": 500000,
     "max_route_time": 86400,
