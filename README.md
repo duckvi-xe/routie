@@ -207,8 +207,8 @@ Most common cause: an incomplete download of a large file (e.g., Italy is ~1.5 G
    VALHALLA_REBUILD=true docker compose --profile valhalla up -d
    ```
 
-The [`download_osm.sh`](scripts/download_osm.sh) script now validates every PBF
-file after download using Python to catch corrupted files early.
+The [`download_osm.sh`](scripts/download_osm.sh) script automatically verifies
+every PBF file against Geofabrik's official MD5 checksums after download.
 
 ### Test Valhalla Directly
 

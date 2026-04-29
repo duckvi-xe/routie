@@ -2,8 +2,9 @@
 # =============================================================================
 #  download_osm.sh — Download OSM extracts for Valhalla routing
 # =============================================================================
-#  Downloads OSM PBF files and places them in data/osm/, which is mounted
-#  into the Valhalla container at /custom_files/.
+#  Downloads OSM PBF files (with MD5 integrity verification via Geofabrik's
+#  checksum files) and places them in data/osm/, which is mounted into the
+#  Valhalla container at /custom_files/.
 #
 #  Usage:
 #    ./scripts/download_osm.sh [region]
@@ -16,7 +17,7 @@
 #  Regions: any area from https://download.geofabrik.de
 #  Default: andorra (small, fast for testing)
 #
-#  Requirements: curl, python3
+#  Requirements: wget, md5sum
 # =============================================================================
 
 set -euo pipefail
@@ -35,43 +36,50 @@ ok()   { echo -e "${GREEN}[OK]${NC}    $*"; }
 err()  { echo -e "${RED}[ERROR]${NC} $*" >&2; }
 
 # ---------------------------------------------------------------------------
-#  verify_pbf <file> — validates an OSM PBF file header using Python
+#  verify_md5 <pbf_path> <md5_url>
+#    Downloads the .md5 checksum from Geofabrik, then verifies the PBF
+#    file against it using md5sum.
 # ---------------------------------------------------------------------------
-verify_pbf() {
-    local file="$1"
-    if [ ! -f "$file" ]; then
-        err "File not found: ${file}"
+verify_md5() {
+    local pbf="$1"
+    local md5_url="$2"
+    local md5_file="${pbf}.md5"
+
+    info "Downloading MD5 checksum from ${md5_url}"
+    if ! wget -q -O "$md5_file" "$md5_url"; then
+        err "Could not download MD5 checksum (${md5_url}) — skipping verification."
+        rm -f "$md5_file"
+        return 0
+    fi
+
+    local expected_hash
+    expected_hash=$(awk '{print $1}' "$md5_file")
+
+    if [ -z "$expected_hash" ]; then
+        err "Empty MD5 checksum in ${md5_file} — skipping verification."
+        rm -f "$md5_file"
+        return 0
+    fi
+
+    local actual_hash
+    actual_hash=$(md5sum "$pbf" | awk '{print $1}')
+
+    rm -f "$md5_file"
+
+    if [ "$expected_hash" = "$actual_hash" ]; then
+        ok "MD5 checksum matches: ${expected_hash}"
+        return 0
+    else
+        err "MD5 checksum MISMATCH"
+        err "  Expected (Geofabrik): ${expected_hash}"
+        err "  Actual   (local):     ${actual_hash}"
         return 1
     fi
-    python3 -c "
-import struct, sys
-try:
-    with open('${file}', 'rb') as f:
-        data = f.read(4)
-        if len(data) < 4:
-            sys.exit(1)  # too small
-        blob_len = struct.unpack('>I', data)[0]
-        if blob_len <= 0 or blob_len > 100 * 1024 * 1024:
-            sys.exit(2)  # improbable blob length
-        header = f.read(min(blob_len, 200))
-        if b'OSMHeader' not in header and b'OSMData' not in header:
-            sys.exit(3)  # not a valid OSM PBF
-        sys.exit(0)  # valid
-except Exception:
-    sys.exit(4)
-" && return 0
-    local rc=$?
-    case $rc in
-        1) err "File truncated (too small to be a valid PBF)";;
-        2) err "Invalid blob length (corrupted or truncated PBF)";;
-        3) err "Not a valid OSM PBF file (missing OSMHeader/OSMData marker)";;
-        4) err "Python error while validating PBF";;
-        *) err "Unknown validation error (exit code ${rc})";;
-    esac
-    return 1
 }
 
 # ---------------------------------------------------------------------------
+
+mkdir -p "$OSM_DIR"
 
 IFS=',' read -ra REGIONS <<< "$REGION"
 
@@ -98,24 +106,25 @@ for region in "${REGIONS[@]}"; do
 
     if [ -f "$OUT" ]; then
         ok "Already exists: ${OUT}"
-        if verify_pbf "$OUT"; then
+        if verify_md5 "$OUT" "${URL}.md5"; then
             ok "Integrity check passed: ${OUT}"
         else
-            err "Existing PBF is corrupted — deleting and re-downloading."
+            err "Existing PBF has wrong checksum — deleting and re-downloading."
             rm -f "$OUT"
         fi
     fi
 
     if [ ! -f "$OUT" ]; then
         info "Downloading ${URL}"
-        curl -fSL -o "$OUT" "$URL" || { err "Download failed"; exit 1; }
+        wget -O "$OUT" "$URL" || { err "Download failed"; exit 1; }
         ok "Downloaded: ${OUT} ($(du -h "$OUT" | cut -f1))"
-        if verify_pbf "$OUT"; then
+        if verify_md5 "$OUT" "${URL}.md5"; then
             ok "Integrity check passed: ${OUT}"
         else
-            err "Downloaded PBF is corrupted — the file may be incomplete."
+            err "Downloaded PBF failed MD5 verification — the file is corrupted."
             err "Try again: the Geofabrik mirror may have been flaky."
             err "If the error persists, check your internet connection."
+            rm -f "$OUT"
             exit 1
         fi
     fi
