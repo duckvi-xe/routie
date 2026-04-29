@@ -160,7 +160,7 @@ VALHALLA_REBUILD=true docker compose --profile valhalla up -d
    the Valhalla build script expects them.
 3. On first run (or `VALHALLA_REBUILD=true`), the Valhalla container builds the
    routing tile database — this is the slow step (5-30 min depending on region).
-4. Once built, tiles are cached in the `valhalla-tiles` Docker volume.
+4. Once built, tiles are cached in `data/osm/valhalla_tiles/` (persisted on your host).
 5. The backend's **[entrypoint](scripts/docker-entrypoint.sh)** automatically
    waits for Valhalla's healthcheck before starting, so there's no race condition.
 6. If Valhalla is unreachable after the timeout, the backend falls back to the
@@ -181,9 +181,34 @@ docker compose --profile valhalla up -d
 # Stop everything
 docker compose --profile valhalla down
 
-# Stop and delete volumes (remove cached tiles)
+# Stop and delete volumes (remove cached tiles + elevation data)
 docker compose --profile valhalla down -v
 ```
+
+### Troubleshooting
+
+**`failed to inflate zlib stream` / `std::runtime_error`**
+
+This error from Valhalla means the OSM `.osm.pbf` file is corrupted or truncated.
+Most common cause: an incomplete download of a large file (e.g., Italy is ~1.5 GB).
+
+**Fix:**
+
+1. Delete the corrupted file:
+   ```bash
+   rm data/osm/italy-latest.osm.pbf
+   ```
+2. Re-download with integrity verification:
+   ```bash
+   ./scripts/download_osm.sh italy
+   ```
+3. Rebuild tiles:
+   ```bash
+   VALHALLA_REBUILD=true docker compose --profile valhalla up -d
+   ```
+
+The [`download_osm.sh`](scripts/download_osm.sh) script now validates every PBF
+file after download using Python to catch corrupted files early.
 
 ### Test Valhalla Directly
 

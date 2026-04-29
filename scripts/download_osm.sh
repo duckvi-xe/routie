@@ -3,7 +3,7 @@
 #  download_osm.sh — Download OSM extracts for Valhalla routing
 # =============================================================================
 #  Downloads OSM PBF files and places them in data/osm/, which is mounted
-#  into the Valhalla container at /custom_files/osm/.
+#  into the Valhalla container at /custom_files/.
 #
 #  Usage:
 #    ./scripts/download_osm.sh [region]
@@ -16,7 +16,7 @@
 #  Regions: any area from https://download.geofabrik.de
 #  Default: andorra (small, fast for testing)
 #
-#  Requirements: curl
+#  Requirements: curl, python3
 # =============================================================================
 
 set -euo pipefail
@@ -34,7 +34,44 @@ info() { echo -e "${CYAN}[INFO]${NC}  $*"; }
 ok()   { echo -e "${GREEN}[OK]${NC}    $*"; }
 err()  { echo -e "${RED}[ERROR]${NC} $*" >&2; }
 
-mkdir -p "$OSM_DIR"
+# ---------------------------------------------------------------------------
+#  verify_pbf <file> — validates an OSM PBF file header using Python
+# ---------------------------------------------------------------------------
+verify_pbf() {
+    local file="$1"
+    if [ ! -f "$file" ]; then
+        err "File not found: ${file}"
+        return 1
+    fi
+    python3 -c "
+import struct, sys
+try:
+    with open('${file}', 'rb') as f:
+        data = f.read(4)
+        if len(data) < 4:
+            sys.exit(1)  # too small
+        blob_len = struct.unpack('>I', data)[0]
+        if blob_len <= 0 or blob_len > 100 * 1024 * 1024:
+            sys.exit(2)  # improbable blob length
+        header = f.read(min(blob_len, 200))
+        if b'OSMHeader' not in header and b'OSMData' not in header:
+            sys.exit(3)  # not a valid OSM PBF
+        sys.exit(0)  # valid
+except Exception:
+    sys.exit(4)
+" && return 0
+    local rc=$?
+    case $rc in
+        1) err "File truncated (too small to be a valid PBF)";;
+        2) err "Invalid blob length (corrupted or truncated PBF)";;
+        3) err "Not a valid OSM PBF file (missing OSMHeader/OSMData marker)";;
+        4) err "Python error while validating PBF";;
+        *) err "Unknown validation error (exit code ${rc})";;
+    esac
+    return 1
+}
+
+# ---------------------------------------------------------------------------
 
 IFS=',' read -ra REGIONS <<< "$REGION"
 
@@ -61,10 +98,26 @@ for region in "${REGIONS[@]}"; do
 
     if [ -f "$OUT" ]; then
         ok "Already exists: ${OUT}"
-    else
+        if verify_pbf "$OUT"; then
+            ok "Integrity check passed: ${OUT}"
+        else
+            err "Existing PBF is corrupted — deleting and re-downloading."
+            rm -f "$OUT"
+        fi
+    fi
+
+    if [ ! -f "$OUT" ]; then
         info "Downloading ${URL}"
         curl -fSL -o "$OUT" "$URL" || { err "Download failed"; exit 1; }
         ok "Downloaded: ${OUT} ($(du -h "$OUT" | cut -f1))"
+        if verify_pbf "$OUT"; then
+            ok "Integrity check passed: ${OUT}"
+        else
+            err "Downloaded PBF is corrupted — the file may be incomplete."
+            err "Try again: the Geofabrik mirror may have been flaky."
+            err "If the error persists, check your internet connection."
+            exit 1
+        fi
     fi
 done
 
